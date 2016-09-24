@@ -1,11 +1,11 @@
 /**
   ******************************************************************************
-  * File     01_LockingMechanism/main.c 
+  * File     01_LockingMechanism/main.c
   * Author   MCD Application Team
   * Version  V1.2.0
   * Date     05-February-2016
-  * Brief    This code example shows how to lock the configuration of some pins 
-   *         in a GPIO port.  
+  * Brief    This code example shows how to lock the configuration of some pins
+   *         in a GPIO port.
   *
   ==============================================================================
                       ##### RCC specific features #####
@@ -45,8 +45,8 @@
                     ##### How to test this example #####
  ===============================================================================
     - The code configure port A and lock its configuration, then it attempts
-      to write in the locked registers. 
-    - In case the write is successful, the red LED blinks meaning the lock has 
+      to write in the locked registers.
+    - In case the write is successful, the red LED blinks meaning the lock has
       failed, else the green led blinks slowly.
   *    
   ******************************************************************************
@@ -70,7 +70,7 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32l031xx.h"
+#include "stm32l0xx.h"
 
 /**  STM32L0_Snippets
   * 
@@ -152,7 +152,7 @@ __INLINE void SystemClock_Config(void)
 {
   uint32_t tickstart;
   /* (1) Enable power interface clock */
-  /* (2) Select voltage scale 1 (1.65V - 1.95V) 
+  /* (2) Select voltage scale 1 (1.65V - 1.95V)
          i.e. (01)  for VOS bits in PWR_CR */
   /* (3) Enable HSI divided by 4 in RCC-> CR */
   /* (4) Wait for HSI ready flag and HSIDIV flag */
@@ -163,7 +163,7 @@ __INLINE void SystemClock_Config(void)
   /* (9) Wait for clock switched on PLL */
   RCC->APB1ENR |= (RCC_APB1ENR_PWREN); /* (1) */
   PWR->CR = (PWR->CR & ~(PWR_CR_VOS)) | PWR_CR_VOS_0; /* (2) */
-  
+
   RCC->CR |= RCC_CR_HSION | RCC_CR_HSIDIVEN; /* (3) */
   tickstart = Tick;
   while ((RCC->CR & (RCC_CR_HSIRDY |RCC_CR_HSIDIVF)) != (RCC_CR_HSIRDY |RCC_CR_HSIDIVF)) /* (4) */
@@ -172,7 +172,7 @@ __INLINE void SystemClock_Config(void)
     {
       error = ERROR_HSI_TIMEOUT; /* Report an error */
       return;
-    }      
+    }
   }
   RCC->CFGR |= RCC_CFGR_PLLSRC_HSI | RCC_CFGR_PLLMUL8 | RCC_CFGR_PLLDIV2; /* (5) */
   RCC->CR |= RCC_CR_PLLON; /* (6) */
@@ -183,7 +183,7 @@ __INLINE void SystemClock_Config(void)
     {
       error = ERROR_PLL_TIMEOUT; /* Report an error */
       return;
-    }      
+    }
   }
   RCC->CFGR |= RCC_CFGR_SW_PLL; /* (8) */
   tickstart = Tick;
@@ -193,7 +193,7 @@ __INLINE void SystemClock_Config(void)
     {
       error = ERROR_CLKSWITCH_TIMEOUT; /* Report an error */
       return;
-    }      
+    }
   }
 }
 
@@ -207,17 +207,17 @@ __INLINE void SystemClock_Config(void)
   * Retval  None
   */
 __INLINE void  ConfigureGPIO(void)
-{  
+{
   /* (1) Enable the peripheral clock of GPIOA and GPIOB */
-  /* (2) Select input mode (00) on GPIOA pin 0 
+  /* (2) Select input mode (00) on GPIOA pin 0
          and output mode (01) on GPIOA pin 5 */
   /* (3) Select output mode (01) on GPIOB pin 4 */
   /* (4) Select Pull-down (10) for PA0 */
   RCC->IOPENR |= RCC_IOPENR_GPIOAEN | RCC_IOPENR_GPIOBEN; /* (1) */  
-  GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE0 | GPIO_MODER_MODE5)) 
+  GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE0 | GPIO_MODER_MODE5))
                | (GPIO_MODER_MODE5_0); /* (2) */  
-  GPIOB->MODER = (GPIOB->MODER & ~(GPIO_MODER_MODE4)) 
-               | (GPIO_MODER_MODE4_0); /* (3) */ 
+  GPIOB->MODER = (GPIOB->MODER & ~(GPIO_MODER_MODE3))
+               | (GPIO_MODER_MODE3_0); /* (3) */
   GPIOA->PUPDR = (GPIOA->PUPDR & ~(GPIO_PUPDR_PUPD0)); /* (4) */
 }
 
@@ -261,21 +261,21 @@ uint32_t mode, pupd, ospeed, afr;
   pupd = GPIOA->PUPDR;
   ospeed = GPIOA->OSPEEDR;
   afr = GPIOA->AFR[1];
-  
-  /* (1) Select analog mode on GPIOA pin 0 and 5 */ 
+
+  /* (1) Select analog mode on GPIOA pin 0 and 5 */
   /* (2) Select no pull-up/pull-down for PA0 */
   /* (3) Select high speed for GPIOA pin 5 (max 50MHz) - OSPEEDR5 = 11*/
   /* (4) Select AFR2 for PA0 and AFR3 for PA5 */
-  GPIOA->MODER |= (GPIO_MODER_MODE0 |GPIO_MODER_MODE5); /* (1) */  
+  GPIOA->MODER |= (GPIO_MODER_MODE0 |GPIO_MODER_MODE5); /* (1) */
   GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD0; /* (2) */
   GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEED5; /* (3) */
   GPIOA->AFR[0] |= 2 + (3 << (5 *4)); /* (4) */
-  
+
   /* Check each configuration register has not been modified */
   if ((GPIOA->MODER != mode) || (GPIOA->PUPDR != pupd) || (GPIOA->OSPEEDR != ospeed) || (GPIOA->AFR[0] != afr))
   {
     error |= ERROR_WRITING_OK; /* Report an error */
-    ConfigureGPIO(); /* Configure again the GPIOs to still drive the leds */    
+    ConfigureGPIO(); /* Configure again the GPIOs to still drive the leds */
   }
 }
 
@@ -333,19 +333,19 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   static uint32_t long_counter = LONG_DELAY;
-  static uint32_t short_counter = SHORT_DELAY;  
+  static uint32_t short_counter = SHORT_DELAY;
   static uint16_t error_temp = 0;
-  
+
   Tick++;
-  if (long_counter-- == 0) 
+  if (long_counter-- == 0)
   {
     if(error == 0)
     {
       /* the following instruction can only be used if no ISR modifies GPIOC ODR
-         either by writing directly it or by using GPIOC BSRR or BRR 
+         either by writing directly it or by using GPIOC BSRR or BRR
          else a toggle mechanism must be implemented using GPIOC BSRR and/or BRR
       */
-      GPIOB->ODR ^= (1 << 4);//toggle green led on PB4
+      GPIOB->ODR ^= (1 << 3);//toggle green led on PB4
       long_counter = LONG_DELAY;
     }
     else if (error != 0xFF)
@@ -355,17 +355,17 @@ void SysTick_Handler(void)
       short_counter = SHORT_DELAY;
       long_counter = LONG_DELAY << 1;
       GPIOA->BSRR = (1 << 5); //set red led on PA5
-      GPIOB->BRR = (1 << 4); //switch off green led on PB4
+      GPIOB->BRR = (1 << 3); //switch off green led on PB4
     }
   }
   if (error_temp > 0)
   {
-    if (short_counter-- == 0) 
+    if (short_counter-- == 0)
     {
       GPIOA->ODR ^= (1 << 5); //toggle red led
       short_counter = SHORT_DELAY;
       error_temp--;
-    }  
+    }
   }
 }
 
