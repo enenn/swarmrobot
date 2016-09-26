@@ -71,6 +71,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32l0xx.h"
+#include "swarm.h"
+#include "stdio.h"
 
 /**  STM32L0_Snippets
   * 
@@ -88,13 +90,13 @@
 #define SHORT_DELAY 200
 #define LONG_DELAY 1000
 
-/* Error codes used to make the red led blinking */
-#define ERROR_LOCK_FAILED 0x01
-#define ERROR_WRITING_OK 0x02
+#define ERROR_HSI_TIMEOUT 0x01
+#define ERROR_PLL_TIMEOUT 0x02
+#define ERROR_CLKSWITCH_TIMEOUT 0x03
 
-#define ERROR_HSI_TIMEOUT 0x04
-#define ERROR_PLL_TIMEOUT 0x05
-#define ERROR_CLKSWITCH_TIMEOUT 0x06
+/* Error codes used to make the red led blinking */
+#define ERROR_LOCK_FAILED 0x05
+#define ERROR_WRITING_OK 0x06
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -123,6 +125,7 @@ int main(void)
   SysTick_Config(2000); /* 1ms config */
   SystemClock_Config();
   ConfigureGPIO();
+  Configure_Serial();
   if (error != 0)
   {
     while(1) /* endless loop */
@@ -132,9 +135,26 @@ int main(void)
   SysTick_Config(16000); /* 1ms config */
   LockGPIOA(1 << 0 | 1 << 5); /* Locks PA0, PA8 and PA9 */
   ChangeGPIOA_Configuration();
-  while (1) /* Infinite loop */
+
+  USART_String("L0 USART2\r\n");
+  USART_String("The quick brown dog jumps over the lazy dog\r\n");
+
+  printf("Hello World!\r\n");
+
+  while(1) /* Infinite loop */
   {
+    uint16_t data;
+
+    // Echo Demo
+    // Echos all input data to output
+
+    while(USART2->ISR & USART_ISR_RXNE); // Wait for RXNE to assert
+    data = USART2->RDR; // Read receive register
+
+    while(USART2->ISR & USART_ISR_TXE); // Wait for TXE to assert
+    USART2->TDR = data; // Write transmit register
   }
+
 }
 
 
