@@ -133,7 +133,7 @@ int main(void)
   }
   SysTick_Config(16000); /* 1ms config */
 
-  USART_String("L0 USART2 Init finished\r\n");
+  USART_Send("L0 USART2 Init finished\r\n");
 
   while(1) /* Infinite loop */
   {
