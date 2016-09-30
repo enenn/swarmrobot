@@ -74,10 +74,6 @@
 #include "swarm.h"
 #include <stdio.h>
 
-/**  STM32L0_Snippets
-  * 
-  */
-
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 /* Time-out values */
@@ -90,13 +86,6 @@
 #define SHORT_DELAY 200
 #define LONG_DELAY 1000
 
-#define ERROR_HSI_TIMEOUT 0x01
-#define ERROR_PLL_TIMEOUT 0x02
-#define ERROR_CLKSWITCH_TIMEOUT 0x03
-
-/* Error codes used to make the red led blinking */
-#define ERROR_LOCK_FAILED 0x05
-#define ERROR_WRITING_OK 0x06
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
@@ -105,8 +94,6 @@ volatile uint16_t error = 0;  //initialized at 0 and modified by the functions
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void  ConfigureGPIO(void);
-void  LockGPIOA(uint16_t lock);
-void  ChangeGPIOA_Configuration(void);
 /* Private functions ---------------------------------------------------------*/
 
 /**
@@ -124,7 +111,9 @@ int main(void)
      */
   SysTick_Config(2000); /* 1ms config */
   SystemClock_Config();
+  ConfigureGPIO();
   Configure_Serial();
+
   if (error != 0)
   {
     while(1) /* endless loop */
@@ -133,7 +122,32 @@ int main(void)
   }
   SysTick_Config(16000); /* 1ms config */
 
-  USART_Send("L0 USART2 Init finished\r\n");
+  USART_sendln("L0 USART2 Init finished");
+
+  USART_sendln("\r\nAdding to queue!");
+  cmd_queue_add("first");
+  cmd_queue_add("second");
+  cmd_queue_add("third");
+  cmd_queue_add("fourth");
+
+  USART_sendln("\r\nDequeuing:");
+
+  USART_sendln(cmd_queue_process());
+
+  USART_sendln("\r\nPrint first:");
+  cmd_queue_print_head();
+
+  USART_sendln("\r\nList queue:");
+  cmd_queue_list();
+
+  USART_sendln("\r\nAdding to queue!");
+  cmd_queue_add("new");
+
+  USART_sendln("\r\nList queue again:");
+  cmd_queue_list();
+
+  USART_sendln("\r\nQueue finished!");
+
 
   while(1) /* Infinite loop */
   {
@@ -215,73 +229,13 @@ __INLINE void  ConfigureGPIO(void)
   /* (1) Enable the peripheral clock of GPIOA and GPIOB */
   /* (2) Select input mode (00) on GPIOA pin 0
          and output mode (01) on GPIOA pin 5 */
-  /* (3) Select output mode (01) on GPIOB pin 4 */
+  /* (3) Select output mode (01) on GPIOB pin 3 */
   /* (4) Select Pull-down (10) for PA0 */
   RCC->IOPENR |= RCC_IOPENR_GPIOAEN | RCC_IOPENR_GPIOBEN; /* (1) */  
-  GPIOA->MODER = (GPIOA->MODER & ~(GPIO_MODER_MODE0 | GPIO_MODER_MODE5))
-               | (GPIO_MODER_MODE5_0); /* (2) */  
   GPIOB->MODER = (GPIOB->MODER & ~(GPIO_MODER_MODE3))
                | (GPIO_MODER_MODE3_0); /* (3) */
-  GPIOA->PUPDR = (GPIOA->PUPDR & ~(GPIO_PUPDR_PUPD0)); /* (4) */
 }
 
-
-/**
-  * Brief   This function locks the targeted pins of Port A configuration
-            This function can be easily modified to lock Port B
-  * Param   lock contains the port pin mask to be locked
-  * Retval  None
-  */
-void  LockGPIOA(uint16_t lock)
-{
-  /* (1) Write LCKK bit to 1 and set the pin bits to lock */
-  /* (2) Write LCKK bit to 0 and set the pin bits to lock */
-  /* (3) Write LCKK bit to 1 and set the pin bits to lock */
-  /* (4) Read the Lock register */
-  /* (5) Check the Lock register (optionnal) */
-  GPIOA->LCKR = GPIO_LCKR_LCKK + lock; /* (1) */
-  GPIOA->LCKR = lock; /* (2) */
-  GPIOA->LCKR = GPIO_LCKR_LCKK + lock; /* (3) */
-  GPIOA->LCKR; /* (4) */
-  if ((GPIOA->LCKR & GPIO_LCKR_LCKK) == 0) /* (5) */
-  {
-    error |= ERROR_LOCK_FAILED; /* Report an error */
-  }
-}
-
-
-/**
-  * Brief   This function writes in the protecting registers
-  *         and check they are not modified
-  * Param   None
-  * Retval  None
-  */
-__INLINE void  ChangeGPIOA_Configuration(void)
-{
-uint32_t mode, pupd, ospeed, afr;
-
-  /* Store the current configuration */
-  mode = GPIOA->MODER;
-  pupd = GPIOA->PUPDR;
-  ospeed = GPIOA->OSPEEDR;
-  afr = GPIOA->AFR[1];
-
-  /* (1) Select analog mode on GPIOA pin 0 and 5 */
-  /* (2) Select no pull-up/pull-down for PA0 */
-  /* (3) Select high speed for GPIOA pin 5 (max 50MHz) - OSPEEDR5 = 11*/
-  /* (4) Select AFR2 for PA0 and AFR3 for PA5 */
-  GPIOA->MODER |= (GPIO_MODER_MODE0 |GPIO_MODER_MODE5); /* (1) */
-  GPIOA->PUPDR &= ~GPIO_PUPDR_PUPD0; /* (2) */
-  GPIOA->OSPEEDR |= GPIO_OSPEEDER_OSPEED5; /* (3) */
-  GPIOA->AFR[0] |= 2 + (3 << (5 *4)); /* (4) */
-
-  /* Check each configuration register has not been modified */
-  if ((GPIOA->MODER != mode) || (GPIOA->PUPDR != pupd) || (GPIOA->OSPEEDR != ospeed) || (GPIOA->AFR[0] != afr))
-  {
-    error |= ERROR_WRITING_OK; /* Report an error */
-    ConfigureGPIO(); /* Configure again the GPIOs to still drive the leds */
-  }
-}
 
 /******************************************************************************/
 /*            Cortex-M0 Plus Processor Exceptions Handlers                         */
@@ -349,7 +303,7 @@ void SysTick_Handler(void)
          either by writing directly it or by using GPIOC BSRR or BRR
          else a toggle mechanism must be implemented using GPIOC BSRR and/or BRR
       */
-      GPIOB->ODR ^= (1 << 3);//toggle green led on PB4
+      //GPIOB->ODR ^= (1 << 3);//toggle green led on PB3
       long_counter = LONG_DELAY;
     }
     else if (error != 0xFF)
@@ -358,15 +312,13 @@ void SysTick_Handler(void)
       error_temp = (error << 1) - 1;
       short_counter = SHORT_DELAY;
       long_counter = LONG_DELAY << 1;
-      GPIOA->BSRR = (1 << 5); //set red led on PA5
-      GPIOB->BRR = (1 << 3); //switch off green led on PB4
+      GPIOB->BRR = (1 << 3); //switch off green led on PB3
     }
   }
   if (error_temp > 0)
   {
     if (short_counter-- == 0)
     {
-      GPIOA->ODR ^= (1 << 5); //toggle red led
       short_counter = SHORT_DELAY;
       error_temp--;
     }
