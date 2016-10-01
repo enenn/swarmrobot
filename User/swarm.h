@@ -16,20 +16,18 @@
  */
 
 void Configure_Serial(void);
+void Test_Serial(void);
 void USART_send(const char *s);
 void USART_sendln(const char *s);
 
 void cmd_queue_add(const char *cmd);
 char* cmd_queue_process(void);
-void cmd_queue_list(void);
+void cmd_queue_print_all(void);
 void cmd_queue_print_head(void);
-
 
 /*
  * Behaviour
  */
-
-
 
 /*
  * Robot to robot communication
