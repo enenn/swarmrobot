@@ -13,7 +13,7 @@
 /* Private define ------------------------------------------------------------*/
 
 
-#define NUMBER_OF_ADC_CHANNEL 3
+#define NUMBER_OF_ADC_CHANNEL 7
 
 /* Private variables ---------------------------------------------------------*/
 uint16_t ADC_array[NUMBER_OF_ADC_CHANNEL]; //Array to store the values coming from the ADC
@@ -59,7 +59,30 @@ int configure_comms(void) /*is this called main?
   }
 
 
+  __INLINE void ConfigureDMA(void)
+  {
+    /* (1) Enable the peripheral clock on DMA */
+    /* (2) Enable DMA transfer on ADC - DMACFG is kept at 0 for one shot mode */
+    /* (3) Configure the peripheral data register address */
+    /* (4) Configure the memory address */
+    /* (5) Configure the number of DMA tranfer to be performed on DMA channel 1 */
+    /* (6) Configure increment, size and interrupts */
+    /* (7) Enable DMA Channel 1 */
+    RCC->AHBENR |= RCC_AHBENR_DMA1EN; /* (1) */
+    ADC1->CFGR1 |= ADC_CFGR1_DMAEN; /* (2) */
+    DMA1_Channel1->CPAR = (uint32_t) (&(ADC1->DR)); /* (3) */
+    DMA1_Channel1->CMAR = (uint32_t)(ADC_array); /* (4) */
+    DMA1_Channel1->CNDTR = NUMBER_OF_ADC_CHANNEL; /* (5) */
+    DMA1_Channel1->CCR |= DMA_CCR_MINC | DMA_CCR_MSIZE_0 | DMA_CCR_PSIZE_0 \
+                        | DMA_CCR_TEIE | DMA_CCR_TCIE ; /* (6) */
+    DMA1_Channel1->CCR |= DMA_CCR_EN; /* (7) */
 
+    /* Configure NVIC for DMA */
+    /* (1) Enable Interrupt on DMA Channel 1  */
+    /* (2) Set priority for DMA Channel 1 */
+    NVIC_EnableIRQ(DMA1_Channel1_IRQn); /* (1) */
+    NVIC_SetPriority(DMA1_Channel1_IRQn,0); /* (2) */
+  }
   /**
     * Brief   This function enables the peripheral clocks on GPIO ports A,B
     *         configures PA4 and PB1 in Analog mode.
@@ -67,6 +90,7 @@ int configure_comms(void) /*is this called main?
     * Param   None
     * Retval  None
     */
+
   __INLINE void  ConfigureGPIOforADC(void)
   {
     /* (1) Enable the peripheral clock of GPIOA and GPIOB */
@@ -115,6 +139,7 @@ int configure_comms(void) /*is this called main?
     /* (6) Wake-up the VREFINT (only for VLCD, Temp sensor and VRefInt) */
     //ADC1->CFGR2 &= ~ADC_CFGR2_CKMODE; /* (1) */
     ADC1->CFGR1 |= ADC_CFGR1_WAIT |ADC_CFGR1_CONT | ADC_CFGR1_SCANDIR; /* (2) */
+    /* TODO add more channels*/
     ADC1->CHSELR = ADC_CHSELR_CHSEL4 | ADC_CHSELR_CHSEL9 \
                  | ADC_CHSELR_CHSEL17; /* (3) */
     ADC1->SMPR |= ADC_SMPR_SMP_0 | ADC_SMPR_SMP_1 | ADC_SMPR_SMP_2; /* (4) */
