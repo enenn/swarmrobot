@@ -9,6 +9,9 @@
 #define ERROR_USART 0x04
 #define ERROR_DMA 0x05
 
+#define ERROR_DMA_ADC 0x06
+#define ERROR_DMA_ADC_UNEXPECTED_IRQ 0x07
+
 /*
  * Serial communication
  * Logging

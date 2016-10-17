@@ -73,18 +73,9 @@ node_t *cmd_tail = NULL;
 
 /* Private function prototypes -----------------------------------------------*/
 
-void Configure_Serial(void);
-void Test_Serial(void);
 void Configure_GPIO_USART2(void);
 void Configure_DMA1(void);
 void Configure_USART2(void);
-void USART_send(const char *msg);
-void USART_sendln(const char *msg);
-
-void cmd_queue_add(const char *cmd);
-char* cmd_queue_process(void);
-void cmd_queue_print_all(void);
-void cmd_queue_print_head(void);
 
 /* Private functions ---------------------------------------------------------*/
 
