@@ -37,3 +37,6 @@ void cmd_queue_print_head(void);
  * Sensors
  */
 
+void ConfigureTIM_PWM(void);
+void TIM_PWM_enable(void);
+
